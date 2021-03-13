@@ -38,6 +38,7 @@ Following sections describe each of the operations in detail
 - It used python `kubernetes` module to detect CRs
 - The python file is located in `operator.py`
 - The operator could be tested locally in laptop or in cluster pod
+- Python module requirements are listed in `requirements.txt`
 - For local testing:  
     ```
     export CRD_GROUP=arghya.test
