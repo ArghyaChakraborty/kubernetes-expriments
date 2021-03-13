@@ -1,0 +1,100 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: testcrds.arghya.test
+spec:
+  scope: Cluster
+  group: arghya.test
+  names:
+    kind: TestCRD
+    singular: testcrd
+    plural: testcrds
+    shortNames:
+      - tc
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        required: [testProperty]
+        type: object
+        properties:
+          testProperty:
+            type: string
+            description: "Some random test string"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: arghya-test-sa
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: arghya-test-crb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+subjects:
+- kind: ServiceAccount
+  name: arghya-test-sa
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-arghya-test
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote}}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+spec:
+  template:
+    metadata:
+      name: {{ .Release.Name }}-arghya-test
+      labels:
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    spec:
+      serviceAccountName: arghya-test-sa
+      restartPolicy: Never
+      containers:
+      - name: arghya-test-job
+        image: "{{ .Values.image.repository }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["tail", "-f", "/dev/null"]
+      - name: arghya-test-python-job
+        image: "{{ .Values.image.repository2 }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["python", "operator.py"]
+        env:
+          - name: CRD_GROUP
+            value: {{ .Values.environment.CRD_GROUP | quote }}
+          - name: CRD_PLURAL
+            value: {{ .Values.environment.CRD_PLURAL | quote }}
+          - name: CRD_SINGULAR
+            value: {{ .Values.environment.CRD_SINGULAR | quote }}
+          - name: CRD_VERSION
+            value: {{ .Values.environment.CRD_VERSION | quote }}
+          - name: CRD_SCOPE
+            value: {{ .Values.environment.CRD_SCOPE | quote }}
+          - name: CRD_NAMESPACE
+            value: {{ .Values.environment.CRD_NAMESPACE | quote }}

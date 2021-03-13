@@ -1,0 +1,5 @@
+apiVersion: "arghya.test/v1"
+kind: TestCRD
+metadata:
+  name: test-arghya-crd-1
+testProperty: "Some Test String 123"
